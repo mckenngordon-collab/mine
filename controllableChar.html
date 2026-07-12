@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Controllable Character - Canvas Demo</title>
+<style>
+  body {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #1a1a2e;
+    font-family: sans-serif;
+    color: #eee;
+  }
+  canvas {
+    background: #16213e;
+    border: 2px solid #0f3460;
+    display: block;
+  }
+  p {
+    opacity: 0.7;
+  }
+</style>
+</head>
+<body>
+
+<h2>Use Arrow Keys or WASD to move</h2>
+<canvas id="gameCanvas" width="600" height="400"></canvas>
+<p>requestAnimationFrame-driven movement loop</p>
+
+<script>
+    console.log("Controllable Character Demo Loaded");
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// --- Character state ---
+const player = {
+  x: canvas.width / 2,
+  y: canvas.height / 2,
+  size: 30,
+  speed: 4,
+  color: '#e94560'
+};
+
+// --- Input tracking ---
+// We track which keys are currently held down in an object.
+// This lets the player hold multiple keys at once (e.g. up + left = diagonal).
+const keys = {
+  up: false,
+  down: false,
+  left: false,
+  right: false
+};
+
+window.addEventListener('keydown', (e) => {
+  switch (e.key) {
+    case 'ArrowUp': case 'w': case 'W': keys.up = true; break;
+    case 'ArrowDown': case 's': case 'S': keys.down = true; break;
+    case 'ArrowLeft': case 'a': case 'A': keys.left = true; break;
+    case 'ArrowRight': case 'd': case 'D': keys.right = true; break;
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  switch (e.key) {
+    case 'ArrowUp': case 'w': case 'W': keys.up = false; break;
+    case 'ArrowDown': case 's': case 'S': keys.down = false; break;
+    case 'ArrowLeft': case 'a': case 'A': keys.left = false; break;
+    case 'ArrowRight': case 'd': case 'D': keys.right = false; break;
+  }
+});
+
+// --- Update logic ---
+function update() {
+  let dx = 0;
+  let dy = 0;
+
+  if (keys.up) dy -= 1;
+  if (keys.down) dy += 1;
+  if (keys.left) dx -= 1;
+  if (keys.right) dx += 1;
+
+  // Normalize diagonal movement so it isn't faster than straight movement.
+  // Without this, moving diagonally covers sqrt(2) times more distance per frame.
+  if (dx !== 0 && dy !== 0) {
+    const length = Math.sqrt(dx * dx + dy * dy);
+    dx /= length;
+    dy /= length;
+  }
+
+  player.x += dx * player.speed;
+  player.y += dy * player.speed;
+
+  // Keep the player within the canvas bounds
+  const half = player.size / 2;
+  player.x = Math.max(half, Math.min(canvas.width - half, player.x));
+  player.y = Math.max(half, Math.min(canvas.height - half, player.y));
+}
+
+// --- Draw logic ---
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // simple grid background for reference
+  ctx.strokeStyle = '#0f3460';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < canvas.width; x += 40) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+  for (let y = 0; y < canvas.height; y += 40) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);
+    ctx.stroke();
+  }
+
+  // player character
+  ctx.fillStyle = player.color;
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, player.size / 2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // simple direction indicator (a little triangle) showing facing direction
+  ctx.fillStyle = '#fff';
+  ctx.beginPath();
+  ctx.arc(player.x, player.y, 4, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// --- Main loop ---
+function gameLoop() {
+  update();
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
